@@ -91,6 +91,26 @@
     button:hover {
       background: var(--accent-hover);
     }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.75;
+    }
+
+    .status {
+      margin-top: 12px;
+      min-height: 1.25em;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .status[data-variant="success"] {
+      color: #0f7a43;
+    }
+
+    .status[data-variant="error"] {
+      color: #b42318;
+    }
   </style>
 </head>
 <body>
@@ -98,19 +118,84 @@
     <h1>Join with your email</h1>
     <p>Enter your email address and click submit.</p>
 
-    <form id="email-form">
-      <label for="email">Email address Test</label>
+    <form id="email-form" method="post" action="/">
+      <label for="email">Email address</label>
       <input id="email" name="email" type="email" placeholder="you@example.com" required>
       <button type="submit">Submit</button>
     </form>
+
+    <div id="status" class="status" aria-live="polite"></div>
   </main>
 
   <script>
     const form = document.getElementById("email-form");
+    const statusEl = document.getElementById("status");
+    const submitButton = form.querySelector('button[type="submit"]');
+    const emailInput = document.getElementById("email");
 
-    form.addEventListener("submit", function (event) {
+    function getFrameToken() {
+      const parts = window.location.pathname.split("/").filter(Boolean);
+      const frameIndex = parts.indexOf("frame+");
+
+      if (frameIndex !== -1 && parts[frameIndex + 1]) {
+        return parts[frameIndex + 1];
+      }
+
+      return "";
+    }
+
+    function setStatus(message, variant) {
+      statusEl.textContent = message;
+      if (variant) {
+        statusEl.dataset.variant = variant;
+      } else {
+        delete statusEl.dataset.variant;
+      }
+    }
+
+    form.addEventListener("submit", async function (event) {
       event.preventDefault();
-      alert("Submit clicked");
+
+      const email = emailInput.value.trim();
+      if (!email) {
+        setStatus("Please enter an email address.", "error");
+        emailInput.focus();
+        return;
+      }
+
+      submitButton.disabled = true;
+      setStatus("Submitting...");
+
+      const headers = {
+        "Content-Type": "application/json"
+      };
+
+      const token = getFrameToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      try {
+        const response = await fetch(new URL("/frame+/submit", window.location.origin), {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            email
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Submit failed with status ${response.status}`);
+        }
+
+        setStatus("Submitted successfully.", "success");
+        form.reset();
+      } catch (error) {
+        setStatus("Could not submit the form. Please try again.", "error");
+        console.error(error);
+      } finally {
+        submitButton.disabled = false;
+      }
     });
   </script>
 </body>

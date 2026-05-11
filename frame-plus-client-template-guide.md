@@ -142,8 +142,11 @@ Your frontend should:
 
 Runtime APIs:
 
+- `POST /frame+/submit`
 - `POST /frame+/events`
 - `POST /frame+/actions/{action_identifier}`
+
+For customer submits, prefer `POST /frame+/submit`. It is the stable SDK endpoint on the same origin and Frame+ forwards it to the sessions API at `POST /sessions/{session_id}/frame-input`.
 
 Your app is also free to call your own APIs directly.
 
