@@ -180,7 +180,9 @@
           method: "POST",
           headers,
           body: JSON.stringify({
-            email
+            payload: {
+              email
+            }
           })
         });
 
